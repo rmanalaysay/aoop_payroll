@@ -72,8 +72,8 @@ public class AttendanceDAO {
              PreparedStatement stmt = conn.prepareStatement(query)) {
 
             stmt.setInt(1, employeeId);
-            stmt.setDate(2, Date.valueOf(periodStart));
-            stmt.setDate(3, Date.valueOf(periodEnd));
+            stmt.setDate(2, java.sql.Date.valueOf(periodStart));
+            stmt.setDate(3, java.sql.Date.valueOf(periodEnd));
             
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -229,15 +229,15 @@ public class AttendanceDAO {
     /**
      * Checks if attendance exists for employee on specific date
      * @param employeeId Employee ID
-     * @param date Date to check
+     * @param attendanceDate Date to check
      * @return true if attendance exists
      */
-    public boolean attendanceExistsForDate(int employeeId, LocalDate date) {
+    public boolean attendanceExistsForDate(int employeeId, LocalDate attendanceDate) {
         if (employeeId <= 0) {
             throw new IllegalArgumentException("Employee ID must be positive");
         }
-        if (date == null) {
-            throw new IllegalArgumentException("Date cannot be null");
+        if (attendanceDate == null) {
+            throw new IllegalArgumentException("Attendance date cannot be null");
         }
         
         String query = "SELECT COUNT(*) FROM attendance WHERE employee_id = ? AND date = ?";
@@ -246,7 +246,7 @@ public class AttendanceDAO {
              PreparedStatement stmt = conn.prepareStatement(query)) {
             
             stmt.setInt(1, employeeId);
-            stmt.setDate(2, Date.valueOf(date));
+            stmt.setDate(2, java.sql.Date.valueOf(attendanceDate));
             
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -255,7 +255,7 @@ public class AttendanceDAO {
             }
             
         } catch (SQLException ex) {
-            logger.log(Level.SEVERE, "Error checking attendance existence", ex);
+            logger.log(Level.SEVERE, "Error checking attendance existence for employee " + employeeId + " on " + attendanceDate, ex);
             throw new RuntimeException("Failed to check attendance existence", ex);
         }
         
@@ -276,6 +276,9 @@ public class AttendanceDAO {
         if (periodStart == null || periodEnd == null) {
             throw new IllegalArgumentException("Period dates cannot be null");
         }
+        if (periodStart.isAfter(periodEnd)) {
+            throw new IllegalArgumentException("Period start date cannot be after end date");
+        }
         
         String query = "SELECT COUNT(*) FROM attendance WHERE employee_id = ? AND date >= ? AND date <= ?";
         
@@ -283,8 +286,8 @@ public class AttendanceDAO {
              PreparedStatement stmt = conn.prepareStatement(query)) {
             
             stmt.setInt(1, employeeId);
-            stmt.setDate(2, Date.valueOf(periodStart));
-            stmt.setDate(3, Date.valueOf(periodEnd));
+            stmt.setDate(2, java.sql.Date.valueOf(periodStart));
+            stmt.setDate(3, java.sql.Date.valueOf(periodEnd));
             
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -293,11 +296,48 @@ public class AttendanceDAO {
             }
             
         } catch (SQLException ex) {
-            logger.log(Level.SEVERE, "Error counting attendance days", ex);
+            logger.log(Level.SEVERE, "Error counting attendance days for employee " + employeeId + 
+                      " between " + periodStart + " and " + periodEnd, ex);
             throw new RuntimeException("Failed to count attendance days", ex);
         }
         
         return 0;
+    }
+
+    /**
+     * Gets attendance record for specific employee and date
+     * @param employeeId Employee ID
+     * @param attendanceDate Date to check
+     * @return Attendance object or null if not found
+     */
+    public Attendance getAttendanceByEmployeeAndDate(int employeeId, LocalDate attendanceDate) {
+        if (employeeId <= 0) {
+            throw new IllegalArgumentException("Employee ID must be positive");
+        }
+        if (attendanceDate == null) {
+            throw new IllegalArgumentException("Attendance date cannot be null");
+        }
+        
+        String query = "SELECT * FROM attendance WHERE employee_id = ? AND date = ?";
+        
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            
+            stmt.setInt(1, employeeId);
+            stmt.setDate(2, java.sql.Date.valueOf(attendanceDate));
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToAttendance(rs);
+                }
+            }
+            
+        } catch (SQLException ex) {
+            logger.log(Level.SEVERE, "Error retrieving attendance for employee " + employeeId + " on " + attendanceDate, ex);
+            throw new RuntimeException("Failed to retrieve attendance record", ex);
+        }
+        
+        return null;
     }
     
     /**
@@ -307,12 +347,12 @@ public class AttendanceDAO {
      * @throws SQLException if database access error occurs
      */
     private Attendance mapResultSetToAttendance(ResultSet rs) throws SQLException {
-        Attendance a = new Attendance();
-        a.setAttendanceId(rs.getInt("attendance_id"));
-        a.setEmployeeId(rs.getInt("employee_id"));
-        a.setDate(rs.getDate("date"));
-        a.setLoginTime(rs.getTime("login_time"));
-        a.setLogoutTime(rs.getTime("logout_time"));
-        return a;
+        Attendance attendance = new Attendance();
+        attendance.setAttendanceId(rs.getInt("attendance_id"));
+        attendance.setEmployeeId(rs.getInt("employee_id"));
+        attendance.setDate(rs.getDate("date"));
+        attendance.setLoginTime(rs.getTime("login_time"));
+        attendance.setLogoutTime(rs.getTime("logout_time"));
+        return attendance;
     }
 }
