@@ -4,10 +4,6 @@ import java.sql.Date;
 import java.time.LocalDate;
 import java.util.Objects;
 
-/**
- * Model class representing employee leave requests
- * @author rejoice
- */
 public class LeaveRequest {
     private int leaveId;
     private int employeeId;

@@ -15,6 +15,8 @@ import model.LeaveRequest;
 import model.Overtime;
 import model.Payroll;
 import model.Position;
+import dao.DeductionDAO;
+import model.Deduction;
 
 import java.sql.Date;
 import java.sql.Time;
@@ -51,6 +53,8 @@ public class PayrollCalculator {
     private final GovernmentContributionsDAO govDAO;
     private final CompensationDetailsDAO compDAO;
     private final PositionDAO positionDAO;
+    private final DeductionDAO deductionDAO;
+
     
     public PayrollCalculator() {
         this.employeeDAO = new EmployeeDAO();
@@ -60,6 +64,8 @@ public class PayrollCalculator {
         this.govDAO = new GovernmentContributionsDAO();
         this.compDAO = new CompensationDetailsDAO();
         this.positionDAO = new PositionDAO();
+        this.deductionDAO = new DeductionDAO();
+
     }
     
     /**
@@ -204,34 +210,54 @@ public class PayrollCalculator {
     }
     
     /**
-     * Calculate time-based deductions (late, undertime, unpaid leave)
-     */
+ * Calculate time-based deductions (late, undertime, unpaid leave)
+ */
     private void calculateTimeBasedDeductions(Payroll payroll, int employeeId, 
             LocalDate periodStart, LocalDate periodEnd, double dailyRate) {
-        
-        // Get attendance records for deduction calculations
+
+        // Get attendance records
         List<Attendance> attendanceList = attendanceDAO.getAttendanceByEmployeeIdBetweenDates(
                 employeeId, periodStart, periodEnd);
-        
+
         double lateDeduction = calculateLateDeduction(attendanceList, dailyRate);
         double undertimeDeduction = calculateUndertimeDeduction(attendanceList, dailyRate);
-        
+
         payroll.setLateDeduction(lateDeduction);
         payroll.setUndertimeDeduction(undertimeDeduction);
-        
+
         // Calculate unpaid leave deduction
         List<LeaveRequest> unpaidLeaves = leaveDAO.getApprovedLeavesByEmployeeIdAndDateRange(
                 employeeId, periodStart, periodEnd);
-        
+
         int unpaidLeaveCount = (int) unpaidLeaves.stream()
                 .filter(leave -> "Unpaid".equalsIgnoreCase(leave.getLeaveType()))
                 .count();
-        
+
         double unpaidLeaveDeduction = unpaidLeaveCount * dailyRate;
-        
+
         payroll.setUnpaidLeaveCount(unpaidLeaveCount);
         payroll.setUnpaidLeaveDeduction(unpaidLeaveDeduction);
-        
+
+        // Save deductions into the database
+        try {
+            if (lateDeduction > 0) {
+                Deduction late = new Deduction(employeeId, Deduction.TYPE_LATE, lateDeduction, "Late arrival deduction");
+                deductionDAO.addDeduction(late);
+            }
+
+            if (undertimeDeduction > 0) {
+                Deduction undertime = new Deduction(employeeId, Deduction.TYPE_UNDERTIME, undertimeDeduction, "Undertime deduction");
+                deductionDAO.addDeduction(undertime);
+            }
+
+            if (unpaidLeaveDeduction > 0) {
+                Deduction unpaid = new Deduction(employeeId, Deduction.TYPE_UNPAID_LEAVE, unpaidLeaveDeduction, "Unpaid leave deduction");
+                deductionDAO.addDeduction(unpaid);
+            }
+        } catch (Exception e) {
+            LOGGER.warning(String.format("Failed to record one or more deductions for employee %d: %s", employeeId, e.getMessage()));
+        }
+
         LOGGER.info(String.format("Employee %d deductions - Late: %.2f, Undertime: %.2f, Unpaid Leave: %.2f",
                 employeeId, lateDeduction, undertimeDeduction, unpaidLeaveDeduction));
     }
