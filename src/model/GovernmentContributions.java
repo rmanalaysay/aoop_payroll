@@ -4,10 +4,9 @@
  */
 package model;
 
-/**
- *
- * @author rejoice
- */
+import java.time.LocalDate;
+import java.util.Objects;
+
 public class GovernmentContributions {
     private int contributionId;
     private int employeeId;
@@ -15,19 +14,22 @@ public class GovernmentContributions {
     private double philhealth;
     private double pagibig;
     private double tax;
+    private String tin; // Tax Identification Number
+    private LocalDate contributionPeriod;
 
     // Constructors
     public GovernmentContributions() {}
 
     public GovernmentContributions(int employeeId, double sss, double philhealth, double pagibig, double tax) {
         this.employeeId = employeeId;
-        this.sss = sss;
-        this.philhealth = philhealth;
-        this.pagibig = pagibig;
-        this.tax = tax;
+        setSss(sss);
+        setPhilhealth(philhealth);
+        setPagibig(pagibig);
+        setTax(tax);
+        this.contributionPeriod = LocalDate.now();
     }
 
-    // Getters and Setters
+    // Getters and Setters with enhanced validation
     public int getContributionId() {
         return contributionId;
     }
@@ -41,6 +43,9 @@ public class GovernmentContributions {
     }
 
     public void setEmployeeId(int employeeId) {
+        if (employeeId <= 0) {
+            throw new IllegalArgumentException("Employee ID must be positive");
+        }
         this.employeeId = employeeId;
     }
 
@@ -88,11 +93,63 @@ public class GovernmentContributions {
         this.tax = tax;
     }
 
-    // REMOVED: getTin() method that was throwing UnsupportedOperationException
-    // If TIN is needed, add it as a proper field
+    public String getTin() {
+        return tin;
+    }
 
+    public void setTin(String tin) {
+        if (tin != null && !isValidTin(tin)) {
+            throw new IllegalArgumentException("Invalid TIN format");
+        }
+        this.tin = tin;
+    }
+
+    public LocalDate getContributionPeriod() {
+        return contributionPeriod;
+    }
+
+    public void setContributionPeriod(LocalDate contributionPeriod) {
+        this.contributionPeriod = contributionPeriod;
+    }
+
+    // Utility methods
     public double getTotalContributions() {
         return sss + philhealth + pagibig + tax;
+    }
+
+    public double getTotalMandatoryContributions() {
+        return sss + philhealth + pagibig; // Excluding tax
+    }
+
+    private boolean isValidTin(String tin) {
+        if (tin == null || tin.trim().isEmpty()) {
+            return false;
+        }
+        // Basic TIN validation (Philippines format: XXX-XXX-XXX-XXX)
+        String cleanTin = tin.replaceAll("[^0-9]", "");
+        return cleanTin.length() == 12;
+    }
+
+    public String getFormattedTotalContributions() {
+        return String.format("₱%.2f", getTotalContributions());
+    }
+
+    public boolean hasValidContributions() {
+        return sss >= 0 && philhealth >= 0 && pagibig >= 0 && tax >= 0;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        GovernmentContributions that = (GovernmentContributions) obj;
+        return contributionId == that.contributionId &&
+               employeeId == that.employeeId;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(contributionId, employeeId);
     }
 
     @Override
@@ -104,7 +161,9 @@ public class GovernmentContributions {
                 ", philhealth=" + philhealth +
                 ", pagibig=" + pagibig +
                 ", tax=" + tax +
+                ", tin='" + tin + '\'' +
                 ", total=" + getTotalContributions() +
+                ", period=" + contributionPeriod +
                 '}';
     }
 }

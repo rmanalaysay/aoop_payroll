@@ -5,19 +5,33 @@
 package model;
 
 import java.sql.Date;
+import java.time.LocalDate;
+import java.util.Objects;
 
-/**
- *
- * @author rejoice
- */
 public class Overtime {
     private int overtimeId;
     private int employeeId;
-    private java.sql.Date date;
+    private Date date;
     private double hours;
+    private String reason;
+    private boolean approved;
 
-    // Getters and Setters
+    // Constructors
+    public Overtime() {}
 
+    public Overtime(int employeeId, Date date, double hours) {
+        this.employeeId = employeeId;
+        setDate(date);
+        setHours(hours);
+        this.approved = false; // Default to not approved
+    }
+
+    public Overtime(int employeeId, Date date, double hours, String reason) {
+        this(employeeId, date, hours);
+        this.reason = reason;
+    }
+
+    // Getters and Setters with validation
     public int getOvertimeId() {
         return overtimeId;
     }
@@ -31,6 +45,9 @@ public class Overtime {
     }
 
     public void setEmployeeId(int employeeId) {
+        if (employeeId <= 0) {
+            throw new IllegalArgumentException("Employee ID must be positive");
+        }
         this.employeeId = employeeId;
     }
 
@@ -39,6 +56,9 @@ public class Overtime {
     }
 
     public void setDate(Date date) {
+        if (date == null) {
+            throw new IllegalArgumentException("Date cannot be null");
+        }
         this.date = date;
     }
 
@@ -47,7 +67,77 @@ public class Overtime {
     }
 
     public void setHours(double hours) {
+        if (hours < 0) {
+            throw new IllegalArgumentException("Overtime hours cannot be negative");
+        }
+        if (hours > 24) {
+            throw new IllegalArgumentException("Overtime hours cannot exceed 24 hours in a day");
+        }
         this.hours = hours;
     }
-    
+
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
+
+    public boolean isApproved() {
+        return approved;
+    }
+
+    public void setApproved(boolean approved) {
+        this.approved = approved;
+    }
+
+    // Utility methods
+    public LocalDate getDateAsLocalDate() {
+        return date != null ? date.toLocalDate() : null;
+    }
+
+    public void setDateFromLocalDate(LocalDate localDate) {
+        if (localDate != null) {
+            this.date = Date.valueOf(localDate);
+        }
+    }
+
+    public double calculateOvertimePay(double hourlyRate, double overtimeMultiplier) {
+        if (hourlyRate < 0 || overtimeMultiplier < 0) {
+            throw new IllegalArgumentException("Rates cannot be negative");
+        }
+        return hours * hourlyRate * overtimeMultiplier;
+    }
+
+    public boolean isValidOvertimeHours() {
+        return hours > 0 && hours <= 12; // Reasonable overtime limit
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Overtime overtime = (Overtime) obj;
+        return overtimeId == overtime.overtimeId &&
+               employeeId == overtime.employeeId &&
+               Objects.equals(date, overtime.date);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(overtimeId, employeeId, date);
+    }
+
+    @Override
+    public String toString() {
+        return "Overtime{" +
+                "overtimeId=" + overtimeId +
+                ", employeeId=" + employeeId +
+                ", date=" + date +
+                ", hours=" + hours +
+                ", reason='" + reason + '\'' +
+                ", approved=" + approved +
+                '}';
+    }
 }
