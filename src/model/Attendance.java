@@ -4,6 +4,7 @@ import java.sql.Date;
 import java.sql.Time;
 import java.time.Duration;
 import java.time.LocalTime;
+import java.util.Objects;
 
 /**
  * Model class representing employee attendance
@@ -20,10 +21,10 @@ public class Attendance {
     public Attendance() {}
 
     public Attendance(int employeeId, Date date, Time loginTime, Time logoutTime) {
-        this.employeeId = employeeId;
-        this.date = date;
-        this.loginTime = loginTime;
-        this.logoutTime = logoutTime;
+        setEmployeeId(employeeId);
+        setDate(date);
+        setLoginTime(loginTime);
+        setLogoutTime(logoutTime);
     }
 
     // Getters and Setters with validation
@@ -86,8 +87,31 @@ public class Attendance {
         return Duration.between(login, logout);
     }
 
+    public double getWorkHours() {
+        return getWorkDuration().toMinutes() / 60.0;
+    }
+
     public boolean isFullDay() {
         return getWorkDuration().toHours() >= 8;
+    }
+
+    public boolean isPresent() {
+        return loginTime != null;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Attendance that = (Attendance) obj;
+        return attendanceId == that.attendanceId &&
+               employeeId == that.employeeId &&
+               Objects.equals(date, that.date);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(attendanceId, employeeId, date);
     }
 
     @Override

@@ -1,5 +1,7 @@
 package model;
 
+import java.util.Objects;
+
 /**
  * Model class representing payroll deductions
  * @author rejoice
@@ -11,13 +13,23 @@ public class Deduction {
     private double amount;
     private String description;
 
+    // Deduction type constants
+    public static final String TYPE_LATE = "Late";
+    public static final String TYPE_UNDERTIME = "Undertime";
+    public static final String TYPE_UNPAID_LEAVE = "UnpaidLeave";
+
     // Constructors
     public Deduction() {}
 
     public Deduction(int employeeId, String type, double amount) {
-        this.employeeId = employeeId;
-        this.type = type;
-        this.amount = amount;
+        setEmployeeId(employeeId);
+        setType(type);
+        setAmount(amount);
+    }
+
+    public Deduction(int employeeId, String type, double amount, String description) {
+        this(employeeId, type, amount);
+        setDescription(description);
     }
 
     // Getters and Setters with validation
@@ -52,7 +64,7 @@ public class Deduction {
         if (!isValidType(type)) {
             throw new IllegalArgumentException("Invalid deduction type: " + type);
         }
-        this.type = type;
+        this.type = type.trim();
     }
 
     public double getAmount() {
@@ -71,14 +83,37 @@ public class Deduction {
     }
 
     public void setDescription(String description) {
-        this.description = description;
+        this.description = description != null ? description.trim() : null;
     }
 
     // Utility methods
     private boolean isValidType(String type) {
-        return "Late".equalsIgnoreCase(type) || 
-               "Undertime".equalsIgnoreCase(type) || 
-               "UnpaidLeave".equalsIgnoreCase(type);
+        return TYPE_LATE.equalsIgnoreCase(type) || 
+               TYPE_UNDERTIME.equalsIgnoreCase(type) || 
+               TYPE_UNPAID_LEAVE.equalsIgnoreCase(type);
+    }
+
+    public boolean hasDescription() {
+        return description != null && !description.trim().isEmpty();
+    }
+
+    public String getFormattedAmount() {
+        return String.format("%.2f", amount);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Deduction deduction = (Deduction) obj;
+        return deductionId == deduction.deductionId &&
+               employeeId == deduction.employeeId &&
+               Objects.equals(type, deduction.type);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(deductionId, employeeId, type);
     }
 
     @Override
@@ -87,7 +122,7 @@ public class Deduction {
                 "deductionId=" + deductionId +
                 ", employeeId=" + employeeId +
                 ", type='" + type + '\'' +
-                ", amount=" + amount +
+                ", amount=" + getFormattedAmount() +
                 ", description='" + description + '\'' +
                 '}';
     }

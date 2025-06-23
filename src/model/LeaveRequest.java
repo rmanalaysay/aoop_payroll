@@ -1,35 +1,45 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
 import java.sql.Date;
+import java.time.LocalDate;
+import java.util.Objects;
 
 /**
- *
+ * Model class representing employee leave requests
  * @author rejoice
  */
 public class LeaveRequest {
     private int leaveId;
     private int employeeId;
-    private java.sql.Date startDate;
-    private java.sql.Date endDate;
+    private Date startDate;
+    private Date endDate;
     private String leaveType;
     private String status;
+
+    // Common leave types
+    public static final String ANNUAL_LEAVE = "Annual";
+    public static final String SICK_LEAVE = "Sick";
+    public static final String EMERGENCY_LEAVE = "Emergency";
+    public static final String MATERNITY_LEAVE = "Maternity";
+    public static final String PATERNITY_LEAVE = "Paternity";
+
+    // Status constants
+    public static final String STATUS_PENDING = "Pending";
+    public static final String STATUS_APPROVED = "Approved";
+    public static final String STATUS_REJECTED = "Rejected";
 
     // Constructors
     public LeaveRequest() {}
 
     public LeaveRequest(int employeeId, Date startDate, Date endDate, String leaveType) {
-        this.employeeId = employeeId;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.leaveType = leaveType;
-        this.status = "Pending"; // Default status
+        setEmployeeId(employeeId);
+        setStartDate(startDate);
+        setEndDate(endDate);
+        setLeaveType(leaveType);
+        this.status = STATUS_PENDING; // Default status
     }
 
-    // Getters and Setters
+    // Getters and Setters with validation
     public int getLeaveId() {
         return leaveId;
     }
@@ -43,6 +53,9 @@ public class LeaveRequest {
     }
 
     public void setEmployeeId(int employeeId) {
+        if (employeeId <= 0) {
+            throw new IllegalArgumentException("Employee ID must be positive");
+        }
         this.employeeId = employeeId;
     }
 
@@ -50,7 +63,6 @@ public class LeaveRequest {
         return startDate;
     }
 
-    // FIXED: Was assigning to itself
     public void setStartDate(Date startDate) {
         if (startDate == null) {
             throw new IllegalArgumentException("Start date cannot be null");
@@ -62,7 +74,6 @@ public class LeaveRequest {
         return endDate;
     }
 
-    // FIXED: Was assigning to itself
     public void setEndDate(Date endDate) {
         if (endDate == null) {
             throw new IllegalArgumentException("End date cannot be null");
@@ -81,7 +92,7 @@ public class LeaveRequest {
         if (leaveType == null || leaveType.trim().isEmpty()) {
             throw new IllegalArgumentException("Leave type cannot be null or empty");
         }
-        this.leaveType = leaveType;
+        this.leaveType = leaveType.trim();
     }
 
     public String getStatus() {
@@ -92,16 +103,63 @@ public class LeaveRequest {
         if (status == null || status.trim().isEmpty()) {
             throw new IllegalArgumentException("Status cannot be null or empty");
         }
-        this.status = status;
+        this.status = status.trim();
     }
 
-    // Utility method to calculate leave days
+    // Utility methods
     public long getLeaveDays() {
         if (startDate == null || endDate == null) {
             return 0;
         }
         long diffInMillis = endDate.getTime() - startDate.getTime();
         return (diffInMillis / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
+    }
+
+    public boolean isApproved() {
+        return STATUS_APPROVED.equalsIgnoreCase(status);
+    }
+
+    public boolean isPending() {
+        return STATUS_PENDING.equalsIgnoreCase(status);
+    }
+
+    public boolean isRejected() {
+        return STATUS_REJECTED.equalsIgnoreCase(status);
+    }
+
+    public LocalDate getStartDateAsLocalDate() {
+        return startDate != null ? startDate.toLocalDate() : null;
+    }
+
+    public LocalDate getEndDateAsLocalDate() {
+        return endDate != null ? endDate.toLocalDate() : null;
+    }
+
+    public boolean isValidLeaveType() {
+        return leaveType != null && !leaveType.trim().isEmpty();
+    }
+
+    public boolean overlaps(Date checkStart, Date checkEnd) {
+        if (startDate == null || endDate == null || checkStart == null || checkEnd == null) {
+            return false;
+        }
+        return !(endDate.before(checkStart) || startDate.after(checkEnd));
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        LeaveRequest that = (LeaveRequest) obj;
+        return leaveId == that.leaveId &&
+               employeeId == that.employeeId &&
+               Objects.equals(startDate, that.startDate) &&
+               Objects.equals(endDate, that.endDate);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(leaveId, employeeId, startDate, endDate);
     }
 
     @Override
@@ -113,6 +171,7 @@ public class LeaveRequest {
                 ", endDate=" + endDate +
                 ", leaveType='" + leaveType + '\'' +
                 ", status='" + status + '\'' +
+                ", days=" + getLeaveDays() +
                 '}';
     }
 }

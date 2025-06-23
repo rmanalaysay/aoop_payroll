@@ -1,13 +1,13 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.Objects;
 
+/**
+ * Model class representing employee overtime records
+ * @author rejoice
+ */
 public class Overtime {
     private int overtimeId;
     private int employeeId;
@@ -20,7 +20,7 @@ public class Overtime {
     public Overtime() {}
 
     public Overtime(int employeeId, Date date, double hours) {
-        this.employeeId = employeeId;
+        setEmployeeId(employeeId);
         setDate(date);
         setHours(hours);
         this.approved = false; // Default to not approved
@@ -81,7 +81,7 @@ public class Overtime {
     }
 
     public void setReason(String reason) {
-        this.reason = reason;
+        this.reason = reason != null ? reason.trim() : null;
     }
 
     public boolean isApproved() {
@@ -114,6 +114,14 @@ public class Overtime {
         return hours > 0 && hours <= 12; // Reasonable overtime limit
     }
 
+    public boolean hasReason() {
+        return reason != null && !reason.trim().isEmpty();
+    }
+
+    public String getFormattedHours() {
+        return String.format("%.2f", hours);
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
@@ -135,7 +143,7 @@ public class Overtime {
                 "overtimeId=" + overtimeId +
                 ", employeeId=" + employeeId +
                 ", date=" + date +
-                ", hours=" + hours +
+                ", hours=" + getFormattedHours() +
                 ", reason='" + reason + '\'' +
                 ", approved=" + approved +
                 '}';
