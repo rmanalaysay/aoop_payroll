@@ -1,19 +1,13 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
 import java.sql.Date;
+import java.sql.Time;
 import java.time.LocalDate;
 
 /**
- *
+ * Enhanced Payroll model class aligned with DAO and PayrollCalculator usage
  * @author rejoice
  */
-import java.sql.Date;
-import java.time.LocalDate;
-
 public class Payroll {
     private int payrollId;
     private int employeeId;
@@ -26,8 +20,9 @@ public class Payroll {
     private double totalDeductions;
     private double netPay;
     
-    // Additional payroll components
+    // Enhanced payroll components to match PayrollCalculator
     private double grossEarnings;
+    private double dailyRate;
     private double lateDeduction;
     private double undertimeDeduction;
     private double unpaidLeaveDeduction;
@@ -39,6 +34,10 @@ public class Payroll {
     private double philhealth;
     private double pagibig;
     private double tax;
+    
+    // Additional fields for better tracking
+    private int unpaidLeaveCount;
+    private double totalOvertimeHours;
 
     // Constructors
     public Payroll() {}
@@ -100,6 +99,19 @@ public class Payroll {
             throw new IllegalArgumentException("Monthly rate cannot be negative");
         }
         this.monthlyRate = monthlyRate;
+        // Auto-calculate daily rate when monthly rate is set
+        this.dailyRate = monthlyRate / 22.0; // 22 working days assumption
+    }
+
+    public double getDailyRate() {
+        return dailyRate;
+    }
+
+    public void setDailyRate(double dailyRate) {
+        if (dailyRate < 0) {
+            throw new IllegalArgumentException("Daily rate cannot be negative");
+        }
+        this.dailyRate = dailyRate;
     }
 
     public int getDaysWorked() {
@@ -122,6 +134,17 @@ public class Payroll {
             throw new IllegalArgumentException("Overtime hours cannot be negative");
         }
         this.overtimeHours = overtimeHours;
+    }
+
+    public double getTotalOvertimeHours() {
+        return totalOvertimeHours;
+    }
+
+    public void setTotalOvertimeHours(double totalOvertimeHours) {
+        if (totalOvertimeHours < 0) {
+            throw new IllegalArgumentException("Total overtime hours cannot be negative");
+        }
+        this.totalOvertimeHours = totalOvertimeHours;
     }
 
     public double getGrossPay() {
@@ -154,7 +177,18 @@ public class Payroll {
         this.netPay = netPay;
     }
 
-    // Additional component getters and setters - PROPERLY IMPLEMENTED
+    public int getUnpaidLeaveCount() {
+        return unpaidLeaveCount;
+    }
+
+    public void setUnpaidLeaveCount(int unpaidLeaveCount) {
+        if (unpaidLeaveCount < 0) {
+            throw new IllegalArgumentException("Unpaid leave count cannot be negative");
+        }
+        this.unpaidLeaveCount = unpaidLeaveCount;
+    }
+
+    // Earnings component getters and setters
     public double getGrossEarnings() {
         return grossEarnings;
     }
@@ -164,39 +198,6 @@ public class Payroll {
             throw new IllegalArgumentException("Gross earnings cannot be negative");
         }
         this.grossEarnings = grossEarnings;
-    }
-
-    public double getLateDeduction() {
-        return lateDeduction;
-    }
-
-    public void setLateDeduction(double lateDeduction) {
-        if (lateDeduction < 0) {
-            throw new IllegalArgumentException("Late deduction cannot be negative");
-        }
-        this.lateDeduction = lateDeduction;
-    }
-
-    public double getUndertimeDeduction() {
-        return undertimeDeduction;
-    }
-
-    public void setUndertimeDeduction(double undertimeDeduction) {
-        if (undertimeDeduction < 0) {
-            throw new IllegalArgumentException("Undertime deduction cannot be negative");
-        }
-        this.undertimeDeduction = undertimeDeduction;
-    }
-
-    public double getUnpaidLeaveDeduction() {
-        return unpaidLeaveDeduction;
-    }
-
-    public void setUnpaidLeaveDeduction(double unpaidLeaveDeduction) {
-        if (unpaidLeaveDeduction < 0) {
-            throw new IllegalArgumentException("Unpaid leave deduction cannot be negative");
-        }
-        this.unpaidLeaveDeduction = unpaidLeaveDeduction;
     }
 
     public double getOvertimePay() {
@@ -243,6 +244,40 @@ public class Payroll {
         this.clothingAllowance = clothingAllowance;
     }
 
+    // Deduction component getters and setters
+    public double getLateDeduction() {
+        return lateDeduction;
+    }
+
+    public void setLateDeduction(double lateDeduction) {
+        if (lateDeduction < 0) {
+            throw new IllegalArgumentException("Late deduction cannot be negative");
+        }
+        this.lateDeduction = lateDeduction;
+    }
+
+    public double getUndertimeDeduction() {
+        return undertimeDeduction;
+    }
+
+    public void setUndertimeDeduction(double undertimeDeduction) {
+        if (undertimeDeduction < 0) {
+            throw new IllegalArgumentException("Undertime deduction cannot be negative");
+        }
+        this.undertimeDeduction = undertimeDeduction;
+    }
+
+    public double getUnpaidLeaveDeduction() {
+        return unpaidLeaveDeduction;
+    }
+
+    public void setUnpaidLeaveDeduction(double unpaidLeaveDeduction) {
+        if (unpaidLeaveDeduction < 0) {
+            throw new IllegalArgumentException("Unpaid leave deduction cannot be negative");
+        }
+        this.unpaidLeaveDeduction = unpaidLeaveDeduction;
+    }
+
     public double getSss() {
         return sss;
     }
@@ -287,7 +322,15 @@ public class Payroll {
         this.tax = tax;
     }
 
-    // LocalDate compatibility methods
+    // LocalDate compatibility methods - Fixed to work with your PayrollCalculator
+    public void setStartDate(Date startDate) {
+        this.periodStart = startDate;
+    }
+
+    public void setEndDate(Date endDate) {
+        this.periodEnd = endDate;
+    }
+
     public void setStartDate(LocalDate startDate) {
         if (startDate != null) {
             this.periodStart = Date.valueOf(startDate);
@@ -308,8 +351,23 @@ public class Payroll {
         return periodEnd != null ? periodEnd.toLocalDate() : null;
     }
 
-    // Calculation methods
+    // Enhanced calculation methods
+    public void calculateBasicPay() {
+        if (dailyRate > 0 && daysWorked >= 0) {
+            double basicPay = daysWorked * dailyRate;
+            this.grossEarnings = basicPay;
+        }
+    }
+
+    public void calculateOvertimePay() {
+        if (dailyRate > 0 && totalOvertimeHours > 0) {
+            double hourlyRate = dailyRate / 8.0; // 8 hours per day
+            this.overtimePay = totalOvertimeHours * hourlyRate * 1.25; // 125% of hourly rate
+        }
+    }
+
     public void calculateGrossPay() {
+        // Calculate gross pay as sum of all earnings
         this.grossPay = grossEarnings + overtimePay + riceSubsidy + phoneAllowance + clothingAllowance;
     }
 
@@ -324,6 +382,29 @@ public class Payroll {
         this.netPay = grossPay - totalDeductions;
     }
 
+    // Utility methods for payroll processing
+    public double getTotalEarnings() {
+        return grossEarnings + overtimePay + riceSubsidy + phoneAllowance + clothingAllowance;
+    }
+
+    public double getTotalGovernmentContributions() {
+        return sss + philhealth + pagibig;
+    }
+
+    public double getTotalTimeDeductions() {
+        return lateDeduction + undertimeDeduction + unpaidLeaveDeduction;
+    }
+
+    // Validation method
+    public boolean isValid() {
+        return employeeId > 0 && 
+               periodStart != null && 
+               periodEnd != null && 
+               !periodEnd.before(periodStart) &&
+               grossPay >= 0 && 
+               totalDeductions >= 0;
+    }
+
     @Override
     public String toString() {
         return "Payroll{" +
@@ -331,8 +412,27 @@ public class Payroll {
                 ", employeeId=" + employeeId +
                 ", periodStart=" + periodStart +
                 ", periodEnd=" + periodEnd +
+                ", daysWorked=" + daysWorked +
                 ", grossPay=" + grossPay +
+                ", totalDeductions=" + totalDeductions +
                 ", netPay=" + netPay +
                 '}';
+    }
+
+    // Detailed toString for debugging
+    public String toDetailedString() {
+        return "Payroll Details{" +
+                "\n  payrollId=" + payrollId +
+                "\n  employeeId=" + employeeId +
+                "\n  period=" + periodStart + " to " + periodEnd +
+                "\n  daysWorked=" + daysWorked +
+                "\n  dailyRate=" + dailyRate +
+                "\n  grossEarnings=" + grossEarnings +
+                "\n  overtimePay=" + overtimePay +
+                "\n  allowances=" + (riceSubsidy + phoneAllowance + clothingAllowance) +
+                "\n  grossPay=" + grossPay +
+                "\n  deductions=" + totalDeductions +
+                "\n  netPay=" + netPay +
+                "\n}";
     }
 }
